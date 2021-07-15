@@ -5,7 +5,7 @@
 option(ALLOW_BUNDLED_GLEW "Allow use of bundled GLEW source" ON)
 option(ALLOW_SYSTEM_GLEW "Allow use of system-provided GLEW" ON)
 
-set(GLEW_DIR ${EXTERNAL_DIR}/glew-2.1.0)
+set(GLEW_DIR ${CMAKE_CURRENT_LIST_DIR}/glew-2.1.0)
 
 unset(HAVE_SYSTEM_GLEW)
 if(DEFINED GLEW_VERSION)
@@ -27,8 +27,7 @@ if(ALLOW_SYSTEM_GLEW AND HAVE_SYSTEM_GLEW)
 	endif()
 elseif(ALLOW_BUNDLED_GLEW AND EXISTS "${GLEW_DIR}/src/glew.c")
 	message(STATUS "- glew - using bundled source")
-	add_library(external-glew STATIC "${GLEW_DIR}/src/glew.c")
-	target_compile_definitions(external-glew PUBLIC GLEW_STATIC)
+	add_library(external-glew SHARED "${GLEW_DIR}/src/glew.c")
 	target_include_directories(external-glew SYSTEM PUBLIC ${GLEW_DIR}/include)
 	if(TARGET OpenGL::OpenGL)
 		target_link_libraries(external-glew PUBLIC OpenGL::OpenGL)
@@ -42,7 +41,14 @@ elseif(ALLOW_BUNDLED_GLEW AND EXISTS "${GLEW_DIR}/src/glew.c")
 	endif()
 	set_property(TARGET external-glew PROPERTY FOLDER External)
 
+	set_property(TARGET external-glew
+		PROPERTY RUNTIME_OUTPUT_DIRECTORY ${MESHLAB_LIB_OUTPUT_DIR})
+
+	set_property(TARGET external-glew
+		PROPERTY LIBRARY_OUTPUT_DIRECTORY ${MESHLAB_LIB_OUTPUT_DIR})
+
 	target_link_libraries(external-glew PRIVATE external-disable-warnings)
+	install(TARGETS external-glew DESTINATION ${MESHLAB_LIB_INSTALL_DIR})
 else()
 	message(
 		FATAL_ERROR

@@ -18,14 +18,13 @@
 *.AppImage
 .DS_Store
 distrib*
+src/build/*
 src/install/*
+src/external/boost_1_75_0
+src/external/CGAL-5.2.1
 install/macos/resources/meshlab_dmg_final.json
 install/windows/resources/meshlab_final.nsi
 install/windows/resources/MeshLab*.exe
-#install/snap20????/prime
-#install/snap20????/parts
-#install/snap20????/stage
-#install/snap20????/*.snap
 src/common/generated_version_header.h
 
 ##Standard cmake gitignore##
@@ -95,7 +94,7 @@ target_wrapper.*
 # QtCreator CMake
 CMakeLists.txt.user*
 
-# QtCreator 4.8< compilation database 
+# QtCreator 4.8< compilation database
 compile_commands.json
 
 # QtCreator local machine specific files for imported projects

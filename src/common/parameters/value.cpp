@@ -31,14 +31,6 @@ void BoolValue::fillToXMLElement(QDomElement& element) const
 	element.setAttribute("value", v);
 }
 
-MeshValue::MeshValue(MeshDocument* doc, int meshind)
-{
-	if (doc != nullptr)
-		pval = doc->meshList.at(meshind);
-	else
-		pval = nullptr;
-}
-
 void IntValue::fillToXMLElement(QDomElement& element) const
 {
 	element.setAttribute("value", QString::number(pval));
@@ -79,17 +71,5 @@ void ColorValue::fillToXMLElement(QDomElement& element) const
 	element.setAttribute("g",QString::number(pval.green()));
 	element.setAttribute("b",QString::number(pval.blue()));
 	element.setAttribute("a",QString::number(pval.alpha()));
-}
-
-void FileValue::fillToXMLElement(QDomElement& element) const
-{
-	element.setAttribute("value", pval);
-}
-
-void MeshValue::fillToXMLElement(QDomElement&) const
-{
-	//nothing to do on this side... Everything is done on RichMesh side
-	//maybe breaking retrocompatibility for mlx and do something here
-	//could be a good idea.
 }
 

@@ -99,9 +99,9 @@ int FilterIsoParametrization::getRequirements(const QAction *)
 	return MeshModel::MM_NONE;
 }
 
-void FilterIsoParametrization::initParameterList(const QAction *a, MeshDocument& md, RichParameterList & par)
+RichParameterList FilterIsoParametrization::initParameterList(const QAction *a, const MeshDocument& md)
 {
-	
+	RichParameterList par;
 	switch(ID(a))
 	{
 	case ISOP_PARAM:
@@ -131,8 +131,8 @@ void FilterIsoParametrization::initParameterList(const QAction *a, MeshDocument&
 		par.addParam(RichInt("convergenceSpeed",1, "Convergence Precision", "This parameter controls the convergence speed/precision of the optimization of the texture coordinates. Larger the number slower the processing and ,eventually, slightly better results"));
 		par.addParam(RichBool("DoubleStep",true,"Double Step","Use this bool to divide the parameterization in 2 steps. Double step makes the overall process faster and robust."
 															  "<br> Consider to disable this bool in case the object has topologycal noise or small handles."));
-		par.addParam(RichString("AbsLoadName", "", "Load AM", "The filename of the abstract mesh that has to be loaded. If empty, the abstract mesh will be computed according to the above parameters (suggested extension '.abs')."));
-		par.addParam(RichString("AbsSaveName", "", "Save AM", "The filename where the computed abstract mesh will be saved. If empty, nothing will be done."));
+//		par.addParam(RichOpenFile("AbsLoadName", "", {"*.txt"}, "Load AM", "The filename of the abstract mesh that has to be loaded. If empty, the abstract mesh will be computed according to the above parameters (suggested extension '.abs')."));
+//		par.addParam(RichSaveFile("AbsSaveName", "", "*.txt", "Save AM", "The filename where the computed abstract mesh will be saved. If empty, nothing will be done."));
 		break;
 	}
 	case ISOP_REMESHING :
@@ -153,10 +153,11 @@ void FilterIsoParametrization::initParameterList(const QAction *a, MeshDocument&
 	}
 	case ISOP_TRANSFER:
 	{
-		par.addParam(RichMesh ("sourceMesh",md.mm(),&md, "Source Mesh",	"The mesh already having an Isoparameterization"));
-		par.addParam(RichMesh ("targetMesh",md.mm(),&md, "Target Mesh",	"The mesh to be Isoparameterized"));
+		par.addParam(RichMesh ("sourceMesh",md.mm()->id(),&md, "Source Mesh",	"The mesh already having an Isoparameterization"));
+		par.addParam(RichMesh ("targetMesh",md.mm()->id(),&md, "Target Mesh",	"The mesh to be Isoparameterized"));
 	}
 	}
+	return par;
 }
 
 void FilterIsoParametrization::PrintStats(CMeshO *mesh)
@@ -217,9 +218,9 @@ std::map<std::string, QVariant> FilterIsoParametrization::applyFilter(
 		CMeshO::PerMeshAttributeHandle<IsoParametrization> isoPHandle = 
 				tri::Allocator<CMeshO>::GetPerMeshAttribute<IsoParametrization>(*mesh,"isoparametrization");
 		
-		QString AbsLoadName = par.getString("AbsLoadName");
-		if(AbsLoadName.isEmpty())
-		{    
+//		QString AbsLoadName = par.getString("AbsLoadName");
+//		if(AbsLoadName.isEmpty())
+//		{
 			IsoParametrizator Parametrizator;
 			switch (stopCriteria)
 			{
@@ -275,24 +276,24 @@ std::map<std::string, QVariant> FilterIsoParametrization::applyFilter(
 			}
 			
 			isoPHandle().CopyParametrization<CMeshO>(mesh); ///copy back to original mesh
-		}
-		else
-		{
-			AbstractMesh *abs_mesh = new AbstractMesh();
-			ParamMesh *para_mesh = new ParamMesh();
-			bool Done=isoPHandle().LoadBaseDomain<CMeshO>(qUtf8Printable(AbsLoadName),mesh,para_mesh,abs_mesh,true);
-			if (!Done)
-			{
-				delete para_mesh;
-				delete abs_mesh;
-				throw MLException("Abstract domain doesn't fit well with the parametrized mesh");
-			}
-		}
+//		}
+//		else
+//		{
+//			AbstractMesh *abs_mesh = new AbstractMesh();
+//			ParamMesh *para_mesh = new ParamMesh();
+//			bool Done=isoPHandle().LoadBaseDomain<CMeshO>(qUtf8Printable(AbsLoadName),mesh,para_mesh,abs_mesh,true);
+//			if (!Done)
+//			{
+//				delete para_mesh;
+//				delete abs_mesh;
+//				throw MLException("Abstract domain doesn't fit well with the parametrized mesh");
+//			}
+//		}
 		
-		QString AbsSaveName = par.getString("AbsSaveName");
-		if(!AbsSaveName.isEmpty()) {
-			isoPHandle().SaveBaseDomain(qUtf8Printable(AbsSaveName));
-		}
+//		QString AbsSaveName = par.getString("AbsSaveName");
+//		if(!AbsSaveName.isEmpty()) {
+//			isoPHandle().SaveBaseDomain(qUtf8Printable(AbsSaveName));
+//		}
 		break;
 	}
 	case ISOP_REMESHING :
@@ -333,7 +334,7 @@ std::map<std::string, QVariant> FilterIsoParametrization::applyFilter(
 		mm->updateDataMask(MeshModel::MM_FACEFACETOPO);
 		mm->updateDataMask(MeshModel::MM_VERTFACETOPO);
 		PrintStats(rem);
-		mm->UpdateBoxAndNormals();
+		mm->updateBoxAndNormals();
 		break;
 	}
 	case ISOP_DIAMPARAM :
@@ -414,8 +415,8 @@ std::map<std::string, QVariant> FilterIsoParametrization::applyFilter(
 		//  }
 	case ISOP_TRANSFER:
 	{
-		MeshModel *mmtrg = par.getMesh("targetMesh");
-		MeshModel *mmsrc = par.getMesh("sourceMesh");
+		MeshModel *mmtrg = md.getMesh(par.getMeshId("targetMesh"));
+		MeshModel *mmsrc = md.getMesh(par.getMeshId("sourceMesh"));
 		CMeshO *trgMesh=&mmtrg->cm;
 		CMeshO *srcMesh=&mmsrc->cm;
 		

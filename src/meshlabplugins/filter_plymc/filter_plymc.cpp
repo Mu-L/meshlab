@@ -101,8 +101,9 @@ PlyMCPlugin::FilterClass PlyMCPlugin::getClass(const QAction *a) const
 // - the string shown in the dialog
 // - the default value
 // - a possibly long string describing the meaning of that parameter (shown as a popup help in the dialog)
-void PlyMCPlugin::initParameterList(const QAction *action,MeshModel &m, RichParameterList & parlst)
+RichParameterList PlyMCPlugin::initParameterList(const QAction *action,const MeshModel &m)
 {
+	RichParameterList parlst;
 	switch(ID(action))
 	{
 	case FP_PLYMC :
@@ -120,6 +121,7 @@ void PlyMCPlugin::initParameterList(const QAction *action,MeshModel &m, RichPara
 		break;
 	default: break; // do not add any parameter for the other filters
 	}
+	return parlst;
 }
 
 // The Real Core Function doing the actual mesh processing.
@@ -163,14 +165,14 @@ std::map<std::string, QVariant> PlyMCPlugin::applyFilter(
 		p.FullyPreprocessedFlag=true;
 		p.MergeColor=p.VertSplatFlag=par.getBool("mergeColor");
 		p.SimplificationFlag = par.getBool("simplification");
-		foreach(MeshModel*mm, md.meshList)
+		for(MeshModel& mm: md.meshIterator())
 		{
-			if(mm->visible)
+			if(mm.isVisible())
 			{
 				SMesh sm;
-				mm->updateDataMask(MeshModel::MM_FACEQUALITY);
-				tri::Append<SMesh,CMeshO>::Mesh(sm, mm->cm/*,false,p.VertSplatFlag*/); // note the last parameter of the append to prevent removal of unreferenced vertices...
-				tri::UpdatePosition<SMesh>::Matrix(sm, Matrix44f::Construct(mm->cm.Tr),true);
+				mm.updateDataMask(MeshModel::MM_FACEQUALITY);
+				tri::Append<SMesh,CMeshO>::Mesh(sm, mm.cm/*,false,p.VertSplatFlag*/); // note the last parameter of the append to prevent removal of unreferenced vertices...
+				tri::UpdatePosition<SMesh>::Matrix(sm, Matrix44f::Construct(mm.cm.Tr),true);
 				tri::UpdateBounding<SMesh>::Box(sm);
 				tri::UpdateNormal<SMesh>::NormalizePerVertex(sm);
 				tri::UpdateTopology<SMesh>::VertexFace(sm);
@@ -179,7 +181,7 @@ std::map<std::string, QVariant> PlyMCPlugin::applyFilter(
 				for(int i=0;i<par.getInt("normalSmooth");++i)
 					tri::Smooth<SMesh>::FaceNormalLaplacianVF(sm);
 				//QString mshTmpPath=QDir::tempPath()+QString("/")+QString(mm->shortName())+QString(".vmi");
-				QString mshTmpPath=QString("__TMP")+QString(mm->shortName())+QString(".vmi");
+				QString mshTmpPath=QString("__TMP")+QString(mm.shortName())+QString(".vmi");
 				qDebug("Saving tmp file %s",qUtf8Printable(mshTmpPath));
 				int retVal = tri::io::ExporterVMI<SMesh>::Save(sm,qUtf8Printable(mshTmpPath) );
 				if(retVal!=0)
@@ -190,7 +192,7 @@ std::map<std::string, QVariant> PlyMCPlugin::applyFilter(
 					throw MLException("Failed to write vmi temp file " + mshTmpPath);
 				}
 				pmc.MP.AddSingleMesh(qUtf8Printable(mshTmpPath));
-				log("Preprocessing mesh %s",qUtf8Printable(mm->shortName()));
+				log("Preprocessing mesh %s",qUtf8Printable(mm.shortName()));
 			}
 		}
 		
@@ -212,7 +214,7 @@ std::map<std::string, QVariant> PlyMCPlugin::applyFilter(
 				tri::io::ImporterPLY<CMeshO>::Open(mp->cm,name.c_str(),loadMask);
 				if(p.MergeColor) mp->updateDataMask(MeshModel::MM_VERTCOLOR);
 				mp->updateDataMask(MeshModel::MM_VERTQUALITY);
-				mp->UpdateBoxAndNormals();
+				mp->updateBoxAndNormals();
 			}
 		}
 		

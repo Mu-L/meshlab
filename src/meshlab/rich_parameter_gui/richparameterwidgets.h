@@ -372,7 +372,7 @@ public:
 class MeshWidget : public ComboWidget
 {
 private:
-	MeshDocument *md;
+	const MeshDocument *md;
 public:
 	MeshWidget(QWidget *p, const RichMesh& defaultMesh, const RichMesh& rdef);
 	~MeshWidget(){};
@@ -380,9 +380,6 @@ public:
 	void collectWidgetValue();
 	void resetWidgetValue();
 	void setWidgetValue(const Value& nv);
-
-	MeshModel * getMesh();
-	void setMesh(MeshModel * newMesh);
 };
 
 class IOFileWidget : public RichParameterWidget
@@ -393,7 +390,7 @@ protected:
 	IOFileWidget(QWidget* p, const RichParameter& rpar, const RichParameter& rdef);
 	~IOFileWidget();
 
-	void  updateFileName(const FileValue& file);
+	void  updateFileName(const StringValue& file);
 
 public:
 	void addWidgetToGridLayout(QGridLayout* lay,const int r);

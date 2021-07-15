@@ -14,10 +14,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        submodules: true
+        submodules: recursive
     - name: Install dependencies
       run: |
-        brew install libomp
+        brew install libomp cgal xerces-c
         npm install -g appdmg
     - name: Install Qt
       uses: jurplel/install-qt-action@v2

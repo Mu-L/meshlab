@@ -62,7 +62,7 @@ class GLArea : public QGLWidget
 public:
     GLArea(QWidget *parent,MultiViewer_Container *mvcont, RichParameterList *current);
     ~GLArea();
-    static void initGlobalParameterList( RichParameterList * /*globalparam*/);
+    static void initGlobalParameterList(RichParameterList& /*globalparam*/);
 
 private:
     int id;  //the very important unique id of each subwindow.
@@ -479,7 +479,7 @@ public:
     QMap<int, bool> rasterVisibilityMap;
 
     // Add an entry in the mesh visibility map
-    void meshSetVisibility(MeshModel *mp, bool visibility);
+    void meshSetVisibility(MeshModel& mp, bool visibility);
 
     // Add an entry in the raster visibility map
     void addRasterSetVisibility(int rasterId, bool visibility);
@@ -505,7 +505,6 @@ private:
     enum AnimMode { AnimNone, AnimSpin, AnimInterp};
     AnimMode animMode;
     int tileCol, tileRow, totalCols, totalRows;   // snapshot: total number of subparts and current subpart rendered
-    int  currSnapLayer;            // snapshot: total number of layers and current layer rendered
     void setCursorTrack(vcg::TrackMode *tm);
 
 	/*MLRenderingData _perdocglobaldt;*/
@@ -553,6 +552,7 @@ private:
     // This parameter is the one that controls HOW LARGE IS THE TRACKBALL ICON ON THE SCREEN.
     inline float viewRatio() const { return 1.75f; }
     inline float clipRatioNearDefault() const { return 0.1f; }
+    inline float clipRatioFarDefault() const { return 500.0f;}
     inline float fovDefault() const { return 60.f; }
     void initializeShot(Shotm &shot);
 

@@ -108,7 +108,7 @@ public:
 	vcg::Color4b getColor4b(const QString& name) const;
 	Scalarm getAbsPerc(const QString& name) const;
 	int getEnum(const QString& name) const;
-	MeshModel* getMesh(const QString& name) const;
+	unsigned int getMeshId(const QString& name) const;
 	Scalarm getDynamicFloat(const QString& name) const;
 	QString getOpenFileName(const QString& name) const;
 	QString getSaveFileName(const QString& name) const;
@@ -120,6 +120,7 @@ public:
 	const_iterator findParameter(const QString& name) const;
 	RichParameter& at(unsigned int i);
 	const RichParameter& at(unsigned int i) const;
+	unsigned int numberAdvancedParameters() const;
 
 	void setValue(const QString& name, const Value& val);
 	RichParameter& addParam(const RichParameter& pd);

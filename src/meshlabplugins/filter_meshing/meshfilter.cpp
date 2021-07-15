@@ -350,8 +350,9 @@ QString ExtraMeshFilterPlugin::filterInfo(ActionIDType filterID) const
 // return
 //		true if has some parameters
 //		false is has no params
-void ExtraMeshFilterPlugin::initParameterList(const QAction * action, MeshModel & m, RichParameterList & parlst)
+RichParameterList ExtraMeshFilterPlugin::initParameterList(const QAction * action, const MeshModel & m)
 {
+	RichParameterList parlst;
 	float maxVal;
 	QStringList curvCalcMethods;
 	QStringList curvColorMethods;
@@ -556,7 +557,7 @@ void ExtraMeshFilterPlugin::initParameterList(const QAction * action, MeshModel 
 		traslMethod.push_back("Center on Layer BBox");
 		traslMethod.push_back("Set new Origin");
 		parlst.addParam(RichEnum("traslMethod", 0, traslMethod, tr("Transformation:"), tr("[XYZ translation] adds X,Y and Z offset to Layer transformation, [Center on BBox] moves Layer Origin to the Bounding Box center, [Set new Origin] moves Layer Origin to a specific point")));
-		Box3m &bb=m.cm.bbox;
+		const Box3m &bb=m.cm.bbox;
 		parlst.addParam(RichDynamicFloat("axisX",0,-5.0*bb.Diag(),5.0*bb.Diag(),"X Axis","when using [XYZ translation], amount of translation along the X axis (in model units)"));
 		parlst.addParam(RichDynamicFloat("axisY",0,-5.0*bb.Diag(),5.0*bb.Diag(),"Y Axis","when using [XYZ translation], amount of translation along the Y axis (in model units)"));
 		parlst.addParam(RichDynamicFloat("axisZ",0,-5.0*bb.Diag(),5.0*bb.Diag(),"Z Axis","when using [XYZ translation], amount of translation along the Z axis (in model units)"));
@@ -642,6 +643,7 @@ void ExtraMeshFilterPlugin::initParameterList(const QAction * action, MeshModel 
 	default:
 		break;
 	}
+	return parlst;
 }
 
 
@@ -656,24 +658,21 @@ void Freeze(MeshModel *m)
 void ApplyTransform(MeshDocument &md, const Matrix44m &tr, bool toAllFlag, bool freeze,
 					bool invertFlag=false, bool composeFlage=true)
 {
-	if(toAllFlag)
-	{
-		MeshModel   *m=NULL;
-		while ((m=md.nextVisibleMesh(m)))
-		{
+	if(toAllFlag) {
+		MeshModel* m = nullptr;
+		while ((m=md.nextVisibleMesh(m))) {
 			if(invertFlag) m->cm.Tr = Inverse(m->cm.Tr);
 			if(composeFlage) m->cm.Tr = tr * m->cm.Tr;
 			else m->cm.Tr=tr;
 			if(freeze) Freeze(m);
 		}
 
-		for (int i = 0; i < md.rasterList.size(); i++)
-			if (md.rasterList[0]->visible)
-				md.rasterList[i]->shot.ApplyRigidTransformation(tr);
+		for (RasterModel& rm : md.rasterIterator())
+			if (rm.isVisible())
+				rm.shot.ApplyRigidTransformation(tr);
 	}
-	else
-	{
-		MeshModel   *m=md.mm();
+	else {
+		MeshModel* m = md.mm();
 		if(invertFlag) m->cm.Tr = Inverse(m->cm.Tr);
 		if(composeFlage) m->cm.Tr = tr * m->cm.Tr;
 		else m->cm.Tr=tr;
@@ -774,7 +773,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 
 			m.clearDataMask(MeshModel::MM_VERTFACETOPO);
 		}
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 	} break;
 
 	case FP_REORIENT:
@@ -788,7 +787,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 		tri::Clean<CMeshO>::OrientCoherentlyMesh(m.cm, oriented,orientable);
 		tri::UpdateTopology<CMeshO>::FaceFace(m.cm);
 		tri::UpdateTopology<CMeshO>::TestFaceFace(m.cm);
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 	} break;
 
 	case FP_CLUSTERING:
@@ -802,7 +801,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 			ClusteringGrid.AddMesh(m.cm);
 
 		ClusteringGrid.ExtractMesh(m.cm);
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 		m.clearDataMask(MeshModel::MM_FACEFACETOPO);
 	} break;
 
@@ -815,7 +814,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 			tri::Clean<CMeshO>::FlipMesh(m.cm,onlySelected);
 		else
 			flipped =  tri::Clean<CMeshO>::FlipNormalOutside(m.cm);
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 		m.clearDataMask(MeshModel::MM_FACEFACETOPO);
 	} break;
 
@@ -903,7 +902,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 			tri::Allocator<CMeshO>::CompactFaceVector(m.cm);
 		}
 
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 		tri::UpdateNormal<CMeshO>::NormalizePerFace(m.cm);
 		tri::UpdateNormal<CMeshO>::PerVertexFromCurrentFaceNormal(m.cm);
 		tri::UpdateNormal<CMeshO>::NormalizePerVertex(m.cm);
@@ -939,7 +938,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 		lastq_Selected = par.getBool("Selected");
 
 		QuadricTexSimplification(m.cm,TargetFaceNum,lastq_Selected, pp, cb);
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 		tri::UpdateNormal<CMeshO>::NormalizePerFace(m.cm);
 		tri::UpdateNormal<CMeshO>::PerVertexFromCurrentFaceNormal(m.cm);
 		tri::UpdateNormal<CMeshO>::NormalizePerVertex(m.cm);
@@ -954,13 +953,11 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 		tri::Clean<CMeshO>::RemoveUnreferencedVertex(m.cm);
 		tri::Allocator<CMeshO>::CompactEveryVector(m.cm);
 
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 
-		CMeshO toProjectCopy;
+		CMeshO toProjectCopy = m.cm;
 
 		toProjectCopy.face.EnableMark();
-
-		tri::Append<CMeshO, CMeshO>::MeshCopy(toProjectCopy, m.cm);
 
 		tri::IsotropicRemeshing<CMeshO>::Params params;
 		params.SetTargetLen(par.getAbsPerc("TargetLen"));
@@ -1001,7 +998,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 			log(excp.what());
 			throw MLException(excp.what());
 		}
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 
 		//		m.clearDataMask(MeshModel::MM_GEOMETRY_AND_TOPOLOGY_CHANGE | MeshModel::MM_FACEFACETOPO  | MeshModel::MM_VERTQUALITY | MeshModel::MM_FACEMARK | MeshModel::MM_FACEFLAG);
 
@@ -1372,7 +1369,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 		outputValues["closed_holes"] = holeCnt;
 		outputValues["new_faces"] = (int)(m.cm.fn-OriginalSize);
 		assert(tri::Clean<CMeshO>::IsFFAdjacencyConsistent(m.cm));
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 
 		// hole filling filter does not correctly update the border flags (but the topology is still ok!)
 		if(NewFaceSelectedFlag)
@@ -1400,7 +1397,9 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 
 		MeshModel *um=md.addNewMesh("","Unrolled Mesh");
 		um->updateDataMask(&m);
-		um->cm.textures = m.cm.textures;
+		for (const std::string& tex: m.cm.textures) {
+			um->addTexture(tex, m.getTexture(tex));
+		}
 		float avgZ=0;
 		CMeshO::VertexIterator vi;
 		// First loop duplicate accordingly the vertices.
@@ -1477,7 +1476,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 					loopIndex++;
 				}
 			}
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 	} break;
 
 	case FP_REFINE_HALF_CATMULL:
@@ -1535,7 +1534,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 	case FP_MAKE_PURE_TRI:
 	{
 		vcg::tri::BitQuadCreation<CMeshO>::MakeBitTriOnly(m.cm);
-		m.UpdateBoxAndNormals();
+		m.updateBoxAndNormals();
 		m.clearDataMask(MeshModel::MM_POLYGONAL);
 	} break;
 
@@ -1621,7 +1620,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 		// new layer
 		QString newLayerName = QFileInfo(m.shortName()).baseName() + "_perimeter";
 		MeshModel* perimeter = md.addNewMesh("", newLayerName, true);
-		perimeter->Clear();
+		perimeter->clear();
 
 		Matrix44m rotM = m.cm.Tr;
 		rotM.SetColumn(3, Point3m(0.0, 0.0, 0.0));
@@ -1719,7 +1718,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 		{
 			MeshModel* cap2= md.addNewMesh("",sectionName+"_filled");
 			tri::CapEdgeMesh(cap->cm, cap2->cm);
-			cap2->UpdateBoxAndNormals();
+			cap2->updateBoxAndNormals();
 		}
 
 		if(par.getBool("splitSurfaceWithSection"))
@@ -1736,7 +1735,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 			if (  tri::Clean<CMeshO>::CountNonManifoldEdgeFF(underM->cm) > 0)
 			{
 				log("Mesh has some not 2 manifoldfaces, splitting surfaces requires manifoldness");
-				md.delMesh(underM);
+				md.delMesh(underM->id());
 			}
 			else
 			{
@@ -1758,8 +1757,8 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 					if(!(*vi).IsD() && (*vi).IsS())
 						tri::Allocator<CMeshO>::DeleteVertex(underM->cm,*vi);
 
-				underM->UpdateBoxAndNormals();
-				overM->UpdateBoxAndNormals();
+				underM->updateBoxAndNormals();
+				overM->updateBoxAndNormals();
 			}
 		}
 

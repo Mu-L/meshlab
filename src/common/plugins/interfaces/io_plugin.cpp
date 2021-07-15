@@ -3,19 +3,10 @@
 
 unsigned int IOPlugin::numberMeshesContainedInFile(
 		const QString&,
-		const QString&) const
+		const QString&,
+		const RichParameterList&) const
 {
 	return 1;
-}
-
-void IOPlugin::initOpenParameter(const QString& format, const std::list<MeshModel*>& ml, RichParameterList& params)
-{
-	initOpenParameter(format, *ml.front(), params);
-}
-
-void IOPlugin::applyOpenParameter(const QString& format, const std::list<MeshModel*>& ml, const RichParameterList& params)
-{
-	applyOpenParameter(format, *ml.front(), params);
 }
 
 void IOPlugin::open(
@@ -39,16 +30,18 @@ void IOPlugin::open(
 
 void IOPlugin::reportWarning(const QString& warningMessage) const
 {
-	MeshLabPluginLogger::log(GLLogStream::WARNING, warningMessage.toStdString());
-	warnString += "\n" + warningMessage;
+	if (!warningMessage.isEmpty()){
+		MeshLabPluginLogger::log(GLLogStream::WARNING, warningMessage.toStdString());
+		warnString += "\n" + warningMessage;
+	}
 }
 
-void IOPlugin::wrongOpenFormat(const QString& format)
+void IOPlugin::wrongOpenFormat(const QString& format) const
 {
 	throw MLException("Internal error: unknown open format " + format + " to " + pluginName() + " plugin.");
 }
 
-void IOPlugin::wrongSaveFormat(const QString& format)
+void IOPlugin::wrongSaveFormat(const QString& format) const
 {
 	throw MLException("Internal error: unknown save format " + format + " to " + pluginName() + " plugin.");
 }

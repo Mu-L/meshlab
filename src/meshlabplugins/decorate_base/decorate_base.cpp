@@ -95,40 +95,36 @@ void DecorateBasePlugin::decorateDoc(const QAction* a, MeshDocument &md, const R
 		// draw all visible mesh cameras
 		if(rm->getBool(ShowMeshCameras()))
 		{
-			foreach(MeshModel *meshm,  md.meshList)
+			for(const MeshModel& meshm : md.meshIterator())
 			{
-				if (meshm != md.mm() || (!showCameraDetails))   // non-selected meshes, only draw 
+				if (&meshm != md.mm() || (!showCameraDetails))   // non-selected meshes, only draw
 				{
-					if (meshm->visible) DrawCamera(meshm, meshm->cm.shot, Color4b::DarkRed, md.mm()->cm.Tr, rm, painter, qf);
+					if (meshm.isVisible()) DrawCamera(&meshm, meshm.cm.shot, Color4b::DarkRed, md.mm()->cm.Tr, rm, painter, qf);
 				}
 				else                          // selected mesh, draw & display data
 				{
-					DrawCamera(meshm, meshm->cm.shot, Color4b::Magenta, md.mm()->cm.Tr, rm, painter, qf);
-					DisplayCamera(meshm->label(), meshm->cm.shot, 1);
+					DrawCamera(&meshm, meshm.cm.shot, Color4b::Magenta, md.mm()->cm.Tr, rm, painter, qf);
+					DisplayCamera(meshm.label(), meshm.cm.shot, 1);
 				}
 			}
 			
-			if (md.meshList.size() == 0)
+			if (md.meshNumber() == 0)
 				this->realTimeLog("Show Mesh Camera", md.mm()->label(), "There are no Mesh Layers");
 		}
 		
 		// draw all visible raster cameras
-		if(rm->getBool(ShowRasterCameras()))
-		{
-			foreach(RasterModel *raster, md.rasterList)
-			{
-				if(raster != md.rm() || !showCameraDetails )   // non-selected raster, only draw
-				{
-					if(raster->visible) DrawCamera(NULL, raster->shot, Color4b::DarkBlue, md.mm()->cm.Tr, rm, painter,qf);
+		if(rm->getBool(ShowRasterCameras())) {
+			for(RasterModel& raster: md.rasterIterator()) {
+				if(&raster != md.rm() || !showCameraDetails ) { // non-selected raster, only draw
+					if(raster.isVisible()) DrawCamera(nullptr, raster.shot, Color4b::DarkBlue, md.mm()->cm.Tr, rm, painter,qf);
 				}
-				else                          // selected raster, draw & display data
-				{
-					DrawCamera(NULL, raster->shot, Color4b::Cyan, md.mm()->cm.Tr, rm, painter, qf);
-					DisplayCamera(raster->label(), raster->shot, 2);
+				else {                         // selected raster, draw & display data
+					DrawCamera(nullptr, raster.shot, Color4b::Cyan, md.mm()->cm.Tr, rm, painter, qf);
+					DisplayCamera(raster.label(), raster.shot, 2);
 				}
 			}
 			
-			if (md.rasterList.size() == 0)
+			if (md.rasterNumber() == 0)
 				this->realTimeLog("Show Raster Camera", md.mm()->label(), "There are no Rasters");
 		}
 	} break;
@@ -812,7 +808,7 @@ void DecorateBasePlugin::setValue(QString /*name*/,Shotf newVal)
 }
 
 
-void DecorateBasePlugin::DisplayCamera(QString who, Shotm &ls, int cameraSourceId)
+void DecorateBasePlugin::DisplayCamera(QString who, const Shotm &ls, int cameraSourceId)
 {
 	if(!ls.IsValid())
 	{
@@ -862,7 +858,7 @@ void DecorateBasePlugin::DisplayCamera(QString who, Shotm &ls, int cameraSourceI
 			focal,ls.Intrinsics.PixelSizeMm[0],ls.Intrinsics.PixelSizeMm[1]);
 }
 
-void DecorateBasePlugin::DrawCamera(MeshModel *m, Shotm &ls, vcg::Color4b camcolor, Matrix44m &currtr, const RichParameterList *rm, QPainter * /*painter*/, QFont /*qf*/)
+void DecorateBasePlugin::DrawCamera(const MeshModel* m, const Shotm &ls, vcg::Color4b camcolor, Matrix44m &currtr, const RichParameterList *rm, QPainter * /*painter*/, QFont /*qf*/)
 {
 	if(!ls.IsValid())  // no drawing if camera not valid
 		return;
@@ -890,10 +886,8 @@ void DecorateBasePlugin::DrawCamera(MeshModel *m, Shotm &ls, vcg::Color4b camcol
 		len = ls.Intrinsics.FocalMm * drawscale;
 		
 		glPushMatrix();
-		if (rm->getBool(ApplyMeshTr()))
-		{
-			if (m != NULL)
-			{
+		if (rm->getBool(ApplyMeshTr())) {
+			if (m != NULL) {
 				glMultMatrix(m->cm.Tr);
 				glRotatef(180, 0.0, 1.0, 0.0);
 			}

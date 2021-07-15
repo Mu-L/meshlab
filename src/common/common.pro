@@ -70,16 +70,16 @@ HEADERS += 	\
 	python/function_parameter.h \
 	python/function_set.h \
 	python/python_utils.h \
+	utilities/eigen_mesh_conversions.h \
 	utilities/file_format.h \
+	utilities/load_save.h \
 	GLExtensionsManager.h \
 	filterscript.h \
 	GLLogStream.h \
-	mainwindow_interface.h \
 	mlexception.h \
 	mlapplication.h \
-	meshlabdocumentxml.h \
-	ml_selection_buffers.h \
-	meshlabdocumentxml.h
+	ml_selection_buffers.h
+
 
 SOURCES += \
 	globals.cpp \
@@ -111,15 +111,18 @@ SOURCES += \
 	python/function_parameter.cpp \
 	python/function_set.cpp \
 	python/python_utils.cpp \
+	utilities/eigen_mesh_conversions.cpp \
+	utilities/load_save.cpp \
 	GLExtensionsManager.cpp \
 	filterscript.cpp \
 	GLLogStream.cpp \
 	mlapplication.cpp \
 	searcher.cpp \
-	meshlabdocumentxml.cpp \
-	meshlabdocumentbundler.cpp \
 	ml_selection_buffers.cpp \
 	$$MESHLAB_EXTERNAL_DIRECTORY/easyexif/exif.cpp
+
+RESOURCES += \
+	meshlab-common.qrc
 
 macx:QMAKE_POST_LINK = "\
 	if [ -d  $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/Frameworks/ ]; \
